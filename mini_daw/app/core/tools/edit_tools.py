@@ -200,6 +200,181 @@ def set_event_start(
 
     ev.start_tick = state.clamp_tick(int(start_tick))
 
+def set_pitch(
+    state: ProjectState,
+    ctx: ExecContext,
+    *,
+    event_id: str | None = None,
+    event_ref: str | None = None,
+    pitch: str = "C4",
+) -> None:
+    """
+    멜로딕 이벤트의 pitch를 변경합니다.
+    드럼(type='drum')에는 적용하지 않습니다.
+    """
+    _push_undo_snapshot(state, ctx)
+
+    target_id = event_id
+    if target_id is None:
+        if event_ref == "last_selected":
+            target_id = ctx.last_selected()
+        elif event_ref == "last_created":
+            target_id = ctx.last_created()
+
+    if not target_id:
+        return
+
+    ev = next((e for e in state.events if e.id == target_id), None)
+    if not ev or ev.type != "melodic":
+        return
+
+    ev.pitch = pitch
+
+
+_NOTE_ORDER = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+
+
+def _parse_pitch(p: str) -> tuple[int, int] | None:
+    """
+    pitch 예: C4, D#3, A1
+    반환: (note_index 0..11, octave int)
+    """
+    p = p.strip().upper()
+    if len(p) < 2:
+        return None
+
+    # note part: C or C#
+    if p[1] == "#":
+        note = p[:2]
+        rest = p[2:]
+    else:
+        note = p[:1]
+        rest = p[1:]
+
+    if note not in _NOTE_ORDER:
+        return None
+
+    try:
+        octave = int(rest)
+    except:
+        return None
+
+    return (_NOTE_ORDER.index(note), octave)
+
+
+def _pitch_to_str(note_idx: int, octave: int) -> str:
+    return f"{_NOTE_ORDER[note_idx]}{octave}"
+
+
+def transpose_pitch(pitch: str, semitone: int) -> str | None:
+    """
+    pitch를 semitone 만큼 이동시킨 새 pitch 문자열 반환.
+    실패하면 None.
+    """
+    parsed = _parse_pitch(pitch)
+    if not parsed:
+        return None
+
+    note_idx, octave = parsed
+    total = octave * 12 + note_idx + semitone
+
+    if total < 0:
+        total = 0
+
+    new_oct = total // 12
+    new_idx = total % 12
+    return _pitch_to_str(new_idx, new_oct)
+
+
+def transpose_event(
+    state: ProjectState,
+    ctx: ExecContext,
+    *,
+    event_id: str | None = None,
+    event_ref: str | None = None,
+    semitone: int = 0,
+) -> None:
+    """
+    선택(또는 last_created) 멜로딕 이벤트를 semitone 만큼 transpose 합니다.
+    """
+    _push_undo_snapshot(state, ctx)
+
+    target_id = event_id
+    if target_id is None:
+        if event_ref == "last_selected":
+            target_id = ctx.last_selected()
+        elif event_ref == "last_created":
+            target_id = ctx.last_created()
+
+    if not target_id:
+        return
+
+    ev = next((e for e in state.events if e.id == target_id), None)
+    if not ev or ev.type != "melodic" or not ev.pitch:
+        return
+
+    new_p = transpose_pitch(ev.pitch, int(semitone))
+    if new_p:
+        ev.pitch = new_p
+
+def toggle_drum_step(
+    state: ProjectState,
+    ctx: ExecContext,
+    *,
+    track_id: int,
+    start_tick: int,
+    sample_id: str = "drum_kick_001",
+    duration_tick: int = 1,
+    velocity: float = 0.9,
+    tolerance_tick: int = 0,
+) -> str:
+    """
+    드럼 스텝을 토글합니다.
+    - 같은 track_id + 같은 sample_id + (start_tick 근처) 이벤트가 있으면 삭제
+    - 없으면 생성
+
+    tolerance_tick: 클릭 오차 허용(0이면 완전 일치)
+    반환: "created" | "deleted"
+    """
+    _push_undo_snapshot(state, ctx)
+
+    start_tick = state.clamp_tick(int(start_tick))
+    dur = max(1, int(duration_tick))
+
+    # existing 찾기
+    idx = None
+    for i, e in enumerate(state.events):
+        if e.type != "drum":
+            continue
+        if e.track_id != track_id:
+            continue
+        if e.sample_id != sample_id:
+            continue
+        if abs(e.start_tick - start_tick) <= tolerance_tick:
+            idx = i
+            break
+
+    if idx is not None:
+        # 삭제
+        del state.events[idx]
+        return "deleted"
+
+    # 생성
+    eid = new_id("e")
+    ev = Event(
+        id=eid,
+        track_id=track_id,
+        start_tick=start_tick,
+        duration_tick=dur,
+        type="drum",
+        sample_id=sample_id,
+        velocity=float(velocity),
+        pitch=None,
+    )
+    state.events.append(ev)
+    ctx.last_created_event_ids.append(eid)
+    return "created"
+
 # def place_note(
 #     state: ProjectState,
 #     ctx: ExecContext,

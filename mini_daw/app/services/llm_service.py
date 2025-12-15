@@ -107,7 +107,37 @@ class DummyPlanner:
         if m.startswith("delete selected"):
             plan.actions.append(PlanAction(tool="delete_event", args={"event_ref": "last_selected"}))
             return plan
+        
+        '''
+        set pitch D#4
+        transpose +2
+        transpose -12
+        이런 게 됩니다.
+        '''
+        # set pitch (applies to last_selected by default)
+        if m.startswith("set pitch"):
+            # ex) "set pitch C4"
+            parts = m.split()
+            pitch = parts[2].upper() if len(parts) >= 3 else "C4"
+            plan.actions.append(
+                PlanAction(tool="set_pitch", args={"event_ref": "last_selected", "pitch": pitch})
+            )
+            return plan
+
+        # transpose
+        if m.startswith("transpose"):
+            # ex) "transpose +2"
+            delta = 0
+            mm = re.search(r"([+-]?\d+)", m)
+            if mm:
+                delta = int(mm.group(1))
+            plan.actions.append(
+                PlanAction(tool="transpose_event", args={"event_ref": "last_selected", "semitone": delta})
+            )
+            return plan
 
         # default fallback: do nothing
         plan.assumptions.append("No recognized command. No actions executed.")
         return plan
+    
+

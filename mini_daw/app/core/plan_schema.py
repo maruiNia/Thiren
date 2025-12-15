@@ -18,6 +18,8 @@ ToolName = Literal[
     "move_event",
     "delete_event",
     "undo",
+    "set_pitch",        # ✅ 추가
+    "transpose_event",  # ✅ 추가
 ]
 
 

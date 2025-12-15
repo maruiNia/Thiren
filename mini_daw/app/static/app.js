@@ -25,6 +25,15 @@ const TRACK_ID = { drums: 1, bass: 2, pad: 3, lead: 4 };
 // track_id -> data-track attribute
 const TRACK_KEY = { 1: "drums", 2: "bass", 3: "pad", 4: "lead" };
 
+// Step 8 추가: 피치 설정 함수 프론트(UI): 선택된 블록이 멜로딕이면 pitch 입력창을 띄워서 바로 수정
+async function setPitchOnServer(eventId, pitch) {
+  const id = await ensureProject();
+  await api(`/api/projects/${id}/actions/set_pitch`, {
+    method: "POST",
+    body: JSON.stringify({ event_id: eventId, pitch }),
+  });
+}
+
 async function api(path, options = {}) {
   const res = await fetch(path, {
     headers: { "Content-Type": "application/json" },
@@ -435,6 +444,28 @@ function renderTimeline(state) {
         addChatMessage(`Selected: ${ev.id}`, false);
       } catch (e) {
         addChatMessage(`Select failed: ${e.message}`, false);
+      }
+    });
+
+    // Step8 추가: 더블클릭 시 피치 편집
+    block.addEventListener("dblclick", async () => {
+      if (!LAST_STATE) return;
+      const ev2 = (LAST_STATE.events || []).find((x) => x.id === ev.id);
+      if (!ev2 || ev2.type !== "melodic") {
+        addChatMessage("Pitch edit: only for melodic events.", false);
+        return;
+      }
+
+      const current = ev2.pitch || "C4";
+      const next = prompt("Set pitch (e.g., C4, D#3, A1):", current);
+      if (!next) return;
+
+      try {
+        await setPitchOnServer(ev2.id, next.trim().toUpperCase());
+        await reloadState();
+        addChatMessage(`Pitch set: ${ev2.id} -> ${next}`, false);
+      } catch (e) {
+        addChatMessage(`Pitch set failed: ${e.message}`, false);
       }
     });
 

@@ -73,5 +73,14 @@ class PlanExecutor:
             steps = int(args.get("steps", 1))
             edit_tools.undo(state, ctx, steps=steps)
             return f"undo {steps}"
+        
+        if tool == "set_pitch":
+            edit_tools.set_pitch(state, ctx, **args)
+            return "set pitch"
+
+        if tool == "transpose_event":
+            edit_tools.transpose_event(state, ctx, **args)
+            return "transposed event"
+
 
         return ""

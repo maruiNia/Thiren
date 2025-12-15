@@ -30,6 +30,11 @@ class SetStartRequest(BaseModel):
     event_id: str
     start_tick: int
 
+class SetPitchRequest(BaseModel):
+    event_id: str
+    pitch: str
+
+
 @router.post("/{project_id}/actions/select")
 def select_event(project_id: str, req: SelectRequest):
     """
@@ -70,3 +75,27 @@ def set_start(project_id: str, req: SetStartRequest):
 
     state.save(path)
     return {"ok": True, "event_id": req.event_id, "start_tick": req.start_tick}
+
+@router.post("/{project_id}/actions/set_pitch")
+def set_pitch_action(project_id: str, req: SetPitchRequest):
+    """
+    UI에서 event_id의 pitch를 직접 변경.
+    """
+    path = project_path(project_id)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    state = ProjectState.load(path)
+    ev = next((e for e in state.events if e.id == req.event_id), None)
+    if not ev:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if ev.type != "melodic":
+        raise HTTPException(status_code=400, detail="Not a melodic event")
+
+    ctx = get_ctx(project_id)
+
+    from app.core.tools import edit_tools
+    edit_tools.set_pitch(state, ctx, event_id=req.event_id, pitch=req.pitch)
+
+    state.save(path)
+    return {"ok": True, "event_id": req.event_id, "pitch": req.pitch}
