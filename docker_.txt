@@ -1,0 +1,35 @@
+mkdir mini_daw
+cd mini_daw
+
+ni app\main.py
+ni app\config.py
+
+ni app\api\routes_project.py
+ni app\api\routes_chat.py
+ni app\api\routes_jobs.py
+ni app\api\routes_ws.py
+
+ni app\core\state.py
+ni app\core\plan_schema.py
+ni app\core\executor.py
+ni app\core\refs.py
+
+ni app\core\music\chord.py
+ni app\core\music\patterns.py
+ni app\core\music\scale.py
+
+ni app\core\audio\render.py
+ni app\core\audio\pitch.py
+
+ni app\core\tools\edit_tools.py
+ni app\core\tools\music_tools.py
+ni app\core\tools\audio_tools.py
+
+ni app\services\llm_service.py
+ni app\services\stable_audio_service.py
+ni app\services\job_queue.py
+
+ni app\static\app.js
+ni app\static\app.css
+
+ni README.md
