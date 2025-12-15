@@ -81,6 +81,11 @@ class PlanExecutor:
         if tool == "transpose_event":
             edit_tools.transpose_event(state, ctx, **args)
             return "transposed event"
+        
+        if tool == "apply_drum_pattern":
+            edit_tools.apply_drum_pattern(state, ctx, **args)
+            return "applied drum pattern"
+
 
 
         return ""

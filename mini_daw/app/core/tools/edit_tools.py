@@ -375,6 +375,66 @@ def toggle_drum_step(
     ctx.last_created_event_ids.append(eid)
     return "created"
 
+def apply_drum_pattern(
+    state: ProjectState,
+    ctx: ExecContext,
+    *,
+    bars: int = 1,
+    pattern: str = "four_on_the_floor",
+    base_bar: int = 1,
+) -> None:
+    """
+    드럼 패턴 템플릿을 적용합니다.
+    pattern:
+      - "four_on_the_floor": 킥 1,2,3,4박
+      - "backbeat": 스네어 2,4박 + 킥 1,3박
+      - "hihat_8th": 하이햇 8분
+    """
+    _push_undo_snapshot(state, ctx)
+
+    ticks_per_bar = state.meta.ticks_per_bar
+    total_bars = state.meta.bars
+    bars = max(1, min(int(bars), total_bars))
+    base_bar = max(1, min(int(base_bar), total_bars))
+    start_bar_idx = base_bar - 1
+
+    # 드럼 트랙은 1로 고정(지금 프로젝트 기준)
+    track_id = 1
+
+    def tick_at(bar_idx: int, step_1based: int) -> int:
+        # "bar:step"의 step을 tick으로 (step_1based: 1..ticks_per_bar)
+        return bar_idx * ticks_per_bar + (step_1based - 1)
+
+    # 패턴 정의(steps는 1-based)
+    if pattern == "four_on_the_floor":
+        # 킥: 1,5,9,13 (4/4, 16분 그리드에서 1박마다)
+        steps = [1, 5, 9, 13]
+        for b in range(start_bar_idx, min(start_bar_idx + bars, total_bars)):
+            for s in steps:
+                toggle_drum_step(state, ctx, track_id=track_id, start_tick=tick_at(b, s), sample_id="drum_kick_001")
+
+    elif pattern == "backbeat":
+        # 킥 1,9 / 스네어 5,13
+        kick_steps = [1, 9]
+        snare_steps = [5, 13]
+        for b in range(start_bar_idx, min(start_bar_idx + bars, total_bars)):
+            for s in kick_steps:
+                toggle_drum_step(state, ctx, track_id=track_id, start_tick=tick_at(b, s), sample_id="drum_kick_001")
+            for s in snare_steps:
+                toggle_drum_step(state, ctx, track_id=track_id, start_tick=tick_at(b, s), sample_id="drum_snare_001")
+
+    elif pattern == "hihat_8th":
+        # 하이햇 8분: 1,3,5,7,9,11,13,15
+        steps = [1, 3, 5, 7, 9, 11, 13, 15]
+        for b in range(start_bar_idx, min(start_bar_idx + bars, total_bars)):
+            for s in steps:
+                toggle_drum_step(state, ctx, track_id=track_id, start_tick=tick_at(b, s), sample_id="drum_hat_001")
+
+    else:
+        # 알 수 없는 패턴이면 아무것도 안 함
+        return
+
+
 # def place_note(
 #     state: ProjectState,
 #     ctx: ExecContext,

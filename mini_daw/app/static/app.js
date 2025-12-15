@@ -171,6 +171,36 @@ function wireTrackSelection() {
 }
 // -------------------------------------------------------------
 
+function tickFromClickOnGrid(gridEl, state, clientX) {
+  const rect = gridEl.getBoundingClientRect();
+  const x = Math.min(Math.max(clientX - rect.left, 0), rect.width);
+  const ratio = rect.width > 0 ? x / rect.width : 0;
+
+  const totalTicks = state.meta.total_ticks;
+  let tick = Math.round(ratio * totalTicks);
+
+  // 그리드 스냅
+  const gridTick = getGridTick(state);
+  tick = snapTick(tick, gridTick);
+
+  // clamp
+  tick = Math.max(0, Math.min(tick, totalTicks));
+  return tick;
+}
+
+async function toggleDrumOnServer(startTick, sampleId) {
+  const id = await ensureProject();
+  await api(`/api/projects/${id}/actions/toggle_drum`, {
+    method: "POST",
+    body: JSON.stringify({
+      track_id: 1,
+      start_tick: startTick,
+      sample_id: sampleId,
+      velocity: 0.9
+    }),
+  });
+}
+
 /** 채팅 메시지 UI 출력 */
 function addChatMessage(text, isUser) {
   const chatContainer = document.getElementById("chatContainer");
@@ -187,6 +217,36 @@ function addChatMessage(text, isUser) {
   chatContainer.appendChild(message);
   chatContainer.scrollTop = chatContainer.scrollHeight;
 }
+
+function pickDrumSampleFromModifier(e) {
+  // 기본 킥
+  // Shift: 스네어
+  // Alt: 하이햇
+  if (e.shiftKey) return "drum_snare_001";
+  if (e.altKey) return "drum_hat_001";
+  return "drum_kick_001";
+}
+
+function wireDrumStepToggle() {
+  const grid = document.querySelector('.track-grid[data-track="drums"]');
+  if (!grid) return;
+
+  grid.addEventListener("click", async (e) => {
+    if (!LAST_STATE) return;
+
+    const sampleId = pickDrumSampleFromModifier(e);
+    const tick = tickFromClickOnGrid(grid, LAST_STATE, e.clientX);
+
+    try {
+      await toggleDrumOnServer(tick, sampleId);
+      await reloadState();
+      addChatMessage(`Drum toggle @tick=${tick} (${sampleId})`, false);
+    } catch (err) {
+      addChatMessage(`Drum toggle failed: ${err.message}`, false);
+    }
+  });
+}
+
 
 /** (선택) 상단 진행 UI */
 function showProgress(text) {
@@ -253,6 +313,16 @@ async function sendChatCommand(text) {
     addChatMessage("No actions executed.", false);
   }
   return data;
+}
+
+// Step8 추가: 채팅으로 패턴 적용(더미 플래너 없이 UI에서 직접 호출)
+async function applyDrumPattern(pattern, bars = 1, baseBar = 1) {
+  const id = await ensureProject();
+  await api(`/api/projects/${id}/actions/apply_drum_pattern`, {
+    method: "POST",
+    body: JSON.stringify({ pattern, bars, base_bar: baseBar }),
+  });
+  await reloadState();
 }
 
 // job 폴링 유틸 추가
@@ -707,6 +777,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   wireTrackSelection();    // ✅ 추가
   setActiveTrack("bass");  // ✅ 초기 강조
   wireKeyboardMove(); // ✅ 추가
+  wireDrumStepToggle();    // ✅ 추가
 });
 
 // /**

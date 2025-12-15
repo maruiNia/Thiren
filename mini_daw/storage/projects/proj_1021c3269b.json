@@ -1,0 +1,64 @@
+{
+  "id": "proj_1021c3269b",
+  "name": "My Project",
+  "meta": {
+    "time_signature": [
+      4,
+      4
+    ],
+    "bpm": 120,
+    "bars": 4,
+    "ticks_per_beat": 4,
+    "ticks_per_bar": 16,
+    "total_ticks": 64,
+    "swing": 0.0
+  },
+  "tracks": [
+    {
+      "id": 1,
+      "name": "Drums",
+      "type": "drum",
+      "volume": 0.75,
+      "pan": 0.0,
+      "mute": false,
+      "solo": false,
+      "sample_name": "Acoustic Kit 01",
+      "current_sample_id": "drum_kick_001"
+    },
+    {
+      "id": 2,
+      "name": "Bass",
+      "type": "melodic",
+      "volume": 0.8,
+      "pan": 0.0,
+      "mute": false,
+      "solo": false,
+      "sample_name": "Sub Bass 808",
+      "current_sample_id": "bass_A1_001"
+    },
+    {
+      "id": 3,
+      "name": "Pad",
+      "type": "melodic",
+      "volume": 0.6,
+      "pan": 0.0,
+      "mute": false,
+      "solo": false,
+      "sample_name": "Warm Pad A",
+      "current_sample_id": "pad_A1_001"
+    },
+    {
+      "id": 4,
+      "name": "Lead",
+      "type": "melodic",
+      "volume": 0.7,
+      "pan": 0.0,
+      "mute": false,
+      "solo": false,
+      "sample_name": "Pluck Synth C",
+      "current_sample_id": "lead_A1_001"
+    }
+  ],
+  "events": [],
+  "samples": {}
+}

@@ -34,6 +34,16 @@ class SetPitchRequest(BaseModel):
     event_id: str
     pitch: str
 
+class ToggleDrumRequest(BaseModel):
+    track_id: int = 1
+    start_tick: int
+    sample_id: str = "drum_kick_001"
+    velocity: float = 0.9
+
+class ApplyPatternRequest(BaseModel):
+    pattern: str = "four_on_the_floor"
+    bars: int = 1
+    base_bar: int = 1
 
 @router.post("/{project_id}/actions/select")
 def select_event(project_id: str, req: SelectRequest):
@@ -99,3 +109,44 @@ def set_pitch_action(project_id: str, req: SetPitchRequest):
 
     state.save(path)
     return {"ok": True, "event_id": req.event_id, "pitch": req.pitch}
+
+@router.post("/{project_id}/actions/toggle_drum")
+def toggle_drum(project_id: str, req: ToggleDrumRequest):
+    path = project_path(project_id)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    state = ProjectState.load(path)
+    ctx = get_ctx(project_id)
+
+    from app.core.tools import edit_tools
+    result = edit_tools.toggle_drum_step(
+        state, ctx,
+        track_id=req.track_id,
+        start_tick=req.start_tick,
+        sample_id=req.sample_id,
+        velocity=req.velocity,
+        duration_tick=1,
+        tolerance_tick=0,
+    )
+
+    state.save(path)
+    return {"ok": True, "result": result, "start_tick": req.start_tick, "sample_id": req.sample_id}
+
+@router.post("/{project_id}/actions/apply_drum_pattern")
+def apply_drum_pattern(project_id: str, req: ApplyPatternRequest):
+    path = project_path(project_id)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    state = ProjectState.load(path)
+    ctx = get_ctx(project_id)
+
+    from app.core.tools import edit_tools
+    edit_tools.apply_drum_pattern(
+        state, ctx, pattern=req.pattern, bars=req.bars, base_bar=req.base_bar
+    )
+
+    state.save(path)
+    return {"ok": True, "pattern": req.pattern}
+

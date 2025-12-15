@@ -20,6 +20,8 @@ ToolName = Literal[
     "undo",
     "set_pitch",        # ✅ 추가
     "transpose_event",  # ✅ 추가
+    "apply_drum_pattern",
+
 ]
 
 

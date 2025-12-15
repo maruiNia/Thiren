@@ -135,6 +135,18 @@ class DummyPlanner:
                 PlanAction(tool="transpose_event", args={"event_ref": "last_selected", "semitone": delta})
             )
             return plan
+        
+        # DummyPlanner 규칙만 추가
+        if m.startswith("pattern"):
+            # ex) pattern four / pattern backbeat / pattern hat8
+            if "four" in m:
+                plan.actions.append(PlanAction(tool="apply_drum_pattern", args={"pattern": "four_on_the_floor", "bars": 1, "base_bar": 1}))
+            elif "back" in m:
+                plan.actions.append(PlanAction(tool="apply_drum_pattern", args={"pattern": "backbeat", "bars": 1, "base_bar": 1}))
+            elif "hat" in m:
+                plan.actions.append(PlanAction(tool="apply_drum_pattern", args={"pattern": "hihat_8th", "bars": 1, "base_bar": 1}))
+            return plan
+
 
         # default fallback: do nothing
         plan.assumptions.append("No recognized command. No actions executed.")

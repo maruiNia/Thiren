@@ -1,0 +1,113 @@
+{
+  "id": "proj_fd2363a1dc",
+  "name": "My Project",
+  "meta": {
+    "time_signature": [
+      4,
+      4
+    ],
+    "bpm": 120,
+    "bars": 4,
+    "ticks_per_beat": 4,
+    "ticks_per_bar": 16,
+    "total_ticks": 64,
+    "swing": 0.0
+  },
+  "tracks": [
+    {
+      "id": 1,
+      "name": "Drums",
+      "type": "drum",
+      "volume": 0.75,
+      "pan": 0.0,
+      "mute": false,
+      "solo": false,
+      "sample_name": "Acoustic Kit 01",
+      "current_sample_id": "drum_kick_001"
+    },
+    {
+      "id": 2,
+      "name": "Bass",
+      "type": "melodic",
+      "volume": 0.8,
+      "pan": 0.0,
+      "mute": false,
+      "solo": false,
+      "sample_name": "bass_A1_4f4d1ecd67",
+      "current_sample_id": "bass_A1_4f4d1ecd67"
+    },
+    {
+      "id": 3,
+      "name": "Pad",
+      "type": "melodic",
+      "volume": 0.6,
+      "pan": 0.0,
+      "mute": false,
+      "solo": false,
+      "sample_name": "Warm Pad A",
+      "current_sample_id": "pad_A1_001"
+    },
+    {
+      "id": 4,
+      "name": "Lead",
+      "type": "melodic",
+      "volume": 0.7,
+      "pan": 0.0,
+      "mute": false,
+      "solo": false,
+      "sample_name": "Pluck Synth C",
+      "current_sample_id": "lead_A1_001"
+    }
+  ],
+  "events": [
+    {
+      "id": "e_a48df58aa1",
+      "track_id": 1,
+      "start_tick": 0,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.9,
+      "pitch": null
+    },
+    {
+      "id": "e_ba9a029ecc",
+      "track_id": 1,
+      "start_tick": 4,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.9,
+      "pitch": null
+    },
+    {
+      "id": "e_864ac3318e",
+      "track_id": 1,
+      "start_tick": 8,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.9,
+      "pitch": null
+    },
+    {
+      "id": "e_b6575d7800",
+      "track_id": 1,
+      "start_tick": 12,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.9,
+      "pitch": null
+    }
+  ],
+  "samples": {
+    "bass_A1_4f4d1ecd67": {
+      "kind": "melodic",
+      "instrument": "bass",
+      "base_pitch": "A1",
+      "prompt": "warm bass (stub)",
+      "path": "/files/samples/proj_fd2363a1dc/bass_A1_4f4d1ecd67.wav"
+    }
+  }
+}
