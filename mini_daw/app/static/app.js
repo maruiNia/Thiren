@@ -771,8 +771,9 @@ function wireUI() {
         body: JSON.stringify({
           instrument: "bass",
           base_pitch: "A1",
-          prompt: "warm bass (stub)",
-          seconds: 1.5
+          prompt: "",
+          seconds: 1.5,
+          preset: true
         }),
       });
 

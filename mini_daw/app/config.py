@@ -20,6 +20,7 @@ class AppConfig:
     - ticks_per_beat: 내부 tick 해상도(16분 기준이면 4)
     """
     storage_dir: Path = Path("storage")
+    preset_samples_dir: Path = Path("storage/presets")  # ✅ 프리셋 샘플 폴더(미리 wav 넣어두기)
     default_bpm: int = 120
     default_bars: int = 4
     ticks_per_beat: int = 4

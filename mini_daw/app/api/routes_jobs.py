@@ -12,6 +12,10 @@ from pydantic import BaseModel, Field
 from pathlib import Path
 import time
 
+import shutil
+import random
+from app.services.stable_audio_service import StableAudioOpenService, StableAudioGenParams
+
 from app.config import CONFIG
 from app.core.state import ProjectState, new_id
 from app.services.job_queue import JOBS
@@ -43,6 +47,7 @@ class GenerateSampleRequest(BaseModel):
     base_pitch: str = Field(default="A1")
     prompt: str = Field(default="")
     seconds: float = Field(default=1.5, ge=0.2, le=30.0)
+    preset: bool = Field(default=False)  # ✅ 추가
 
 
 class RenderRequest(BaseModel):
@@ -132,33 +137,62 @@ def create_render_mixdown(project_id: str, req: RenderRequest):
     job_id = JOBS.create("render_mixdown", _task)
     return JobResponse(job_id=job_id)
 
-
 @router.post("/api/projects/{project_id}/jobs/generate_sample", response_model=JobResponse)
 def create_generate_sample(project_id: str, req: GenerateSampleRequest):
-    """
-    샘플 생성 job.
-
-    Step4에서는 stable audio 대신 무음 wav를 만들고,
-    project_state.samples에 sample 메타를 등록합니다.
-    """
     path = project_path(project_id)
     if not path.exists():
         raise HTTPException(status_code=404, detail="Project not found")
 
     def _task(job_id: str) -> dict:
-        JOBS.update(job_id, progress=10, message="preparing generation (stub)")
-        time.sleep(0.3)
-
+        JOBS.update(job_id, progress=5, message="loading project")
         state = ProjectState.load(path)
-
-        JOBS.update(job_id, progress=45, message="generating audio (stub)")
-        time.sleep(0.5)
 
         sid = new_id(f"{req.instrument}_{req.base_pitch}")
         out = sample_path(project_id, sid)
-        write_silence_wav(out, seconds=req.seconds)
 
-        # state에 sample 등록(나중에 실제 모델 결과/피치보정 정보도 여기에)
+        # ✅ 1) preset 모드: 미리 준비된 wav 중 하나를 복사
+        if req.preset:
+            preset_dir = CONFIG.preset_samples_dir
+            if not preset_dir.exists():
+                raise RuntimeError(f"Preset dir not found: {preset_dir}")
+
+            wavs = list(preset_dir.glob("*.wav"))
+            if not wavs:
+                raise RuntimeError(f"No preset wav files in: {preset_dir}")
+
+            JOBS.update(job_id, progress=40, message="picking preset sample")
+            src = random.choice(wavs)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(src, out)
+
+            JOBS.update(job_id, progress=85, message="registering preset sample")
+
+            state.samples[sid] = {
+                "kind": "melodic" if req.instrument != "drums" else "drum",
+                "instrument": req.instrument,
+                "base_pitch": req.base_pitch,
+                "prompt": f"[PRESET]{src.name}",
+                "path": f"/files/samples/{project_id}/{sid}.wav",
+            }
+            state.save(path)
+
+            return {"sample_id": sid, "wav_url": state.samples[sid]["path"], "preset": True}
+
+        # ✅ 2) 생성 모드: Stable Audio Open으로 생성
+        JOBS.update(job_id, progress=30, message="generating with Stable Audio Open")
+
+        service = StableAudioOpenService()
+        gen_params = StableAudioGenParams(
+            prompt=req.prompt or f"{req.instrument} one-shot sample, clean, dry",
+            seconds=req.seconds,
+            seed=None,
+            num_inference_steps=40,
+            guidance_scale=7.0,
+        )
+        service.generate_to_wav(gen_params, out)
+
+        JOBS.update(job_id, progress=85, message="registering generated sample")
+
         state.samples[sid] = {
             "kind": "melodic" if req.instrument != "drums" else "drum",
             "instrument": req.instrument,
@@ -168,10 +202,50 @@ def create_generate_sample(project_id: str, req: GenerateSampleRequest):
         }
         state.save(path)
 
-        JOBS.update(job_id, progress=90, message="saving sample metadata")
-        time.sleep(0.2)
-
-        return {"sample_id": sid, "wav_url": state.samples[sid]["path"]}
+        return {"sample_id": sid, "wav_url": state.samples[sid]["path"], "preset": False}
 
     job_id = JOBS.create("generate_sample", _task)
     return JobResponse(job_id=job_id)
+
+# @router.post("/api/projects/{project_id}/jobs/generate_sample", response_model=JobResponse)
+# def create_generate_sample(project_id: str, req: GenerateSampleRequest):
+#     """
+#     샘플 생성 job.
+
+#     Step4에서는 stable audio 대신 무음 wav를 만들고,
+#     project_state.samples에 sample 메타를 등록합니다.
+#     """
+#     path = project_path(project_id)
+#     if not path.exists():
+#         raise HTTPException(status_code=404, detail="Project not found")
+
+#     def _task(job_id: str) -> dict:
+#         JOBS.update(job_id, progress=10, message="preparing generation (stub)")
+#         time.sleep(0.3)
+
+#         state = ProjectState.load(path)
+
+#         JOBS.update(job_id, progress=45, message="generating audio (stub)")
+#         time.sleep(0.5)
+
+#         sid = new_id(f"{req.instrument}_{req.base_pitch}")
+#         out = sample_path(project_id, sid)
+#         write_silence_wav(out, seconds=req.seconds)
+
+#         # state에 sample 등록(나중에 실제 모델 결과/피치보정 정보도 여기에)
+#         state.samples[sid] = {
+#             "kind": "melodic" if req.instrument != "drums" else "drum",
+#             "instrument": req.instrument,
+#             "base_pitch": req.base_pitch,
+#             "prompt": req.prompt,
+#             "path": f"/files/samples/{project_id}/{sid}.wav",
+#         }
+#         state.save(path)
+
+#         JOBS.update(job_id, progress=90, message="saving sample metadata")
+#         time.sleep(0.2)
+
+#         return {"sample_id": sid, "wav_url": state.samples[sid]["path"]}
+
+#     job_id = JOBS.create("generate_sample", _task)
+#     return JobResponse(job_id=job_id)
