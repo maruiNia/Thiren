@@ -20,6 +20,10 @@ from app.core.refs import ExecContext
 from app.services.llm_service import DummyPlanner
 from app.services.context_store import get_ctx
 from app.services.llm_service import GemmaPlanner
+from app.services.nl_rule_parser import parse_rule_command
+from app.core.command_executor import apply_command
+from app.services.nl_command_planner import parse_with_llm
+from app.utils.command_logger import log_command_source
 
 
 router = APIRouter(prefix="/api/projects", tags=["chat"])
@@ -35,36 +39,64 @@ def project_path(project_id: str) -> Path:
 
 
 @router.post("/{project_id}/chat", response_model=ChatResponse)
+@router.post("/{project_id}/chat", response_model=ChatResponse)
 def chat(project_id: str, req: ChatRequest):
-    """
-    채팅 명령을 실행하는 핵심 엔드포인트.
-    """
     path = project_path(project_id)
     if not path.exists():
         raise HTTPException(status_code=404, detail="Project not found")
 
     state = ProjectState.load(path)
-
-    # Step6 프로젝트별 context 확보
     ctx = get_ctx(project_id)
-    print("UNDO STACK BEFORE:", len(ctx.history_events_stack))
 
-    # planner = DummyPlanner()
+    # 1️⃣ 룰 기반 먼저
+    cmd = parse_rule_command(req.message)
+    if cmd:
+        apply_command(state, cmd)
+        state.save(path)
+
+        log_command_source(
+            project_id=project_id,
+            message=req.message,
+            source="RULE",
+            detail=cmd.type,
+        )
+
+        return ChatResponse(
+            state=state.to_dict(),
+            plan={"summary": "rule-based command", "actions": [], "assumptions": []},
+            messages=[f"Applied command: {cmd.type}"],
+        )
+
+    # 2️⃣ LLM 기반
     planner = GemmaPlanner(model_name="google/gemma-2-2b-it")
-    plan = planner.make_plan(req.message, state_hint={"bpm": state.meta.bpm, "bars": state.meta.bars})
+
+    state_hint = {
+        "bpm": state.meta.bpm,
+        "bars": state.meta.bars,
+        "ticks_per_bar": state.meta.ticks_per_bar,
+        "ticks_per_beat": state.meta.ticks_per_beat,
+        "total_ticks": state.meta.total_ticks,
+    }
+    
+    plan = planner.make_plan(
+        req.message,
+        state_hint=state_hint
+    )
 
     executor = PlanExecutor()
     messages = executor.execute(state, ctx, plan)
-    print("UNDO STACK AFTER :", len(ctx.history_events_stack))
-    print("[CHAT] message =", req.message)
-    print("[CHAT] plan.summary =", plan.summary)
-    print("[CHAT] actions =", [a.tool for a in plan.actions])
-
-    # 저장
     state.save(path)
+
+    log_command_source(
+        project_id=project_id,
+        message=req.message,
+        source="LLM" if plan.actions else "NONE",
+        detail=plan.summary,
+    )
 
     return ChatResponse(
         state=state.to_dict(),
         plan=plan.model_dump(),
         messages=messages,
     )
+

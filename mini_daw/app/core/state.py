@@ -175,6 +175,36 @@ class ProjectState:
             events=events,
             samples=d.get("samples", {}),
         )
+    
+    def recompute_meta(self) -> None:
+        """
+        meta 값 재계산.
+        ProjectMeta.total_ticks가 @property(읽기 전용)인 경우를 지원합니다.
+
+        갱신 대상:
+        - ticks_per_beat (없으면 4)
+        - ticks_per_bar  (없으면 ticks_per_beat * 4)
+        - bars           (이미 바뀐 값 그대로 사용)
+        """
+        if not getattr(self, "meta", None):
+            return
+
+        # 기본값 보정
+        if not getattr(self.meta, "ticks_per_beat", None):
+            self.meta.ticks_per_beat = 4
+
+        if not getattr(self.meta, "ticks_per_bar", None):
+            self.meta.ticks_per_bar = int(self.meta.ticks_per_beat) * 4
+
+        # ✅ total_ticks는 property라서 대입하지 않습니다.
+        total = int(self.meta.ticks_per_bar) * int(self.meta.bars)
+
+        # bars를 줄여서 범위 밖이 되면 clamp(또는 삭제)
+        for e in self.events:
+            if e.start_tick > total:
+                e.start_tick = total
+
+
 
     def save(self, path: Path) -> None:
         """프로젝트 상태를 JSON 파일로 저장."""
