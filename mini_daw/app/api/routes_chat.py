@@ -18,13 +18,15 @@ from app.core.plan_schema import ChatRequest, ChatResponse
 from app.core.executor import PlanExecutor
 from app.core.refs import ExecContext
 from app.services.llm_service import DummyPlanner
+from app.services.context_store import get_ctx
 
 
 router = APIRouter(prefix="/api/projects", tags=["chat"])
 
 # 간단 MVP라서 "프로젝트별 컨텍스트"를 메모리에 둡니다.
 # 서버 재시작하면 사라짐. (나중에 Redis/DB로 확장 가능)
-PROJECT_CTX: dict[str, ExecContext] = {}
+# PROJECT_CTX: dict[str, ExecContext] = {}
+
 
 
 def project_path(project_id: str) -> Path:
@@ -42,11 +44,8 @@ def chat(project_id: str, req: ChatRequest):
 
     state = ProjectState.load(path)
 
-    # 프로젝트별 context 확보
-    ctx = PROJECT_CTX.get(project_id)
-    if ctx is None:
-        ctx = ExecContext()
-        PROJECT_CTX[project_id] = ctx
+    # Step6 프로젝트별 context 확보
+    ctx = get_ctx(project_id)
 
     planner = DummyPlanner()
     plan = planner.make_plan(req.message)

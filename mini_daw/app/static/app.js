@@ -280,6 +280,14 @@ function renderTrackControls(state) {
   }
 }
 
+async function selectEventOnServer(eventId) {
+  const id = await ensureProject();
+  await api(`/api/projects/${id}/actions/select`, {
+    method: "POST",
+    body: JSON.stringify({ event_id: eventId }),
+  });
+}
+
 /** 타임라인 렌더: state.events -> 각 track-grid에 event-block 생성 */
 function renderTimeline(state) {
   // 기존 event-block(샘플로 박혀 있던 것 포함) 전부 제거
@@ -314,10 +322,19 @@ function renderTimeline(state) {
     block.dataset.eventId = ev.id;
     block.title = `${ev.id}\ntrack=${ev.track_id}\nstart=${ev.start_tick}\ndur=${ev.duration_tick}\n${ev.pitch || ""}`;
 
-    // 클릭하면 선택 표시(선택 저장은 Step4에서 서버로도 보냄)
-    block.addEventListener("click", () => {
+    // 클릭하면 선택 표시(선택 저장은 Step4에서 서버로도 보냄, Step6에서 구현)
+    block.addEventListener("click", async () => {
+      // UI 하이라이트
       document.querySelectorAll(".event-block").forEach((b) => b.classList.remove("selected"));
       block.classList.add("selected");
+
+      // ✅ 서버에 선택 저장
+      try {
+        await selectEventOnServer(ev.id);
+        addChatMessage(`Selected: ${ev.id}`, false);
+      } catch (e) {
+        addChatMessage(`Select failed: ${e.message}`, false);
+      }
     });
 
     grid.appendChild(block);

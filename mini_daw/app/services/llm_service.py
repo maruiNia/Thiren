@@ -85,9 +85,27 @@ class DummyPlanner:
             plan.actions.append(
                 PlanAction(tool="place_note", args={
                     "track_id": 2, "start": start, "duration_tick": 4,
-                    "sample_id": "bass_A1_001", "pitch": pitch, "velocity": 0.85
+                    # "sample_id": "bass_A1_001", 
+                    "pitch": pitch, "velocity": 0.85
                 })
             )
+            return plan
+        
+        # move selected
+        if m.startswith("move selected"):
+            # ex) "move selected +2"
+            delta = 1
+            mm = re.search(r"([+-]?\d+)", m)
+            if mm:
+                delta = int(mm.group(1))
+            plan.actions.append(
+                PlanAction(tool="move_event", args={"event_ref": "last_selected", "delta_tick": delta})
+            )
+            return plan
+
+        # delete selected
+        if m.startswith("delete selected"):
+            plan.actions.append(PlanAction(tool="delete_event", args={"event_ref": "last_selected"}))
             return plan
 
         # default fallback: do nothing

@@ -120,6 +120,65 @@ def place_note(
     ctx.last_created_event_ids.append(eid)
     return eid
 
+
+def move_event(
+    state: ProjectState,
+    ctx: ExecContext,
+    *,
+    event_id: Optional[str] = None,
+    event_ref: Optional[str] = None,
+    delta_tick: int = 0,
+) -> None:
+    """
+    이벤트 이동.
+    - event_id 또는 event_ref("last_created")로 대상을 찾습니다.
+    """
+    _push_undo_snapshot(state, ctx)
+
+    # Step 6 : last_selected 지원 추가
+    target_id = event_id
+    if target_id is None:
+        if event_ref == "last_created":
+            target_id = ctx.last_created()
+        elif event_ref == "last_selected":
+            target_id = ctx.last_selected()
+
+    if not target_id:
+        return
+
+    ev = next((e for e in state.events if e.id == target_id), None)
+    if ev is None:
+        return
+
+    ev.start_tick = state.clamp_tick(ev.start_tick + int(delta_tick))
+
+
+def delete_event(
+    state: ProjectState,
+    ctx: ExecContext,
+    *,
+    event_id: Optional[str] = None,
+    event_ref: Optional[str] = None,
+) -> None:
+    """
+    이벤트 삭제.
+    - event_id 또는 event_ref("last_created" | "last_selected")
+    """
+    _push_undo_snapshot(state, ctx)
+
+    target_id = event_id
+    if target_id is None:
+        if event_ref == "last_created":
+            target_id = ctx.last_created()
+        elif event_ref == "last_selected":
+            target_id = ctx.last_selected()
+
+    if not target_id:
+        return
+
+    state.events = [e for e in state.events if e.id != target_id]
+
+
 # def place_note(
 #     state: ProjectState,
 #     ctx: ExecContext,
@@ -153,53 +212,3 @@ def place_note(
 #     state.events.append(ev)
 #     ctx.last_created_event_ids.append(eid)
 #     return eid
-
-
-def move_event(
-    state: ProjectState,
-    ctx: ExecContext,
-    *,
-    event_id: Optional[str] = None,
-    event_ref: Optional[str] = None,
-    delta_tick: int = 0,
-) -> None:
-    """
-    이벤트 이동.
-    - event_id 또는 event_ref("last_created")로 대상을 찾습니다.
-    """
-    _push_undo_snapshot(state, ctx)
-
-    target_id = event_id
-    if target_id is None and event_ref == "last_created":
-        target_id = ctx.last_created()
-
-    if not target_id:
-        return
-
-    ev = next((e for e in state.events if e.id == target_id), None)
-    if ev is None:
-        return
-
-    ev.start_tick = state.clamp_tick(ev.start_tick + int(delta_tick))
-
-
-def delete_event(
-    state: ProjectState,
-    ctx: ExecContext,
-    *,
-    event_id: Optional[str] = None,
-    event_ref: Optional[str] = None,
-) -> None:
-    """
-    이벤트 삭제.
-    """
-    _push_undo_snapshot(state, ctx)
-
-    target_id = event_id
-    if target_id is None and event_ref == "last_created":
-        target_id = ctx.last_created()
-
-    if not target_id:
-        return
-
-    state.events = [e for e in state.events if e.id != target_id]
