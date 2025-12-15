@@ -25,6 +25,49 @@ const TRACK_ID = { drums: 1, bass: 2, pad: 3, lead: 4 };
 // track_id -> data-track attribute
 const TRACK_KEY = { 1: "drums", 2: "bass", 3: "pad", 4: "lead" };
 
+//Step 9
+async function toggleDrumAtTick(startTick, drum) {
+  const id = await ensureProject();
+  const data = await api(`/api/projects/${id}/actions/toggle_drum`, {
+    method: "POST",
+    body: JSON.stringify({ start_tick: startTick, drum }),
+  });
+  LAST_STATE = data.state;
+  renderAll(LAST_STATE);
+}
+
+function wireDrumGridClick() {
+  const drumsGrid = document.querySelector('.track-grid[data-track="drums"]');
+  if (!drumsGrid) return;
+
+  drumsGrid.addEventListener("click", async (e) => {
+    // 블록 위 클릭은 "선택"이 이미 있으니 토글로 처리 안 함(중복 방지)
+    if (e.target && e.target.classList.contains("event-block")) return;
+
+    if (!LAST_STATE) return;
+
+    const rect = drumsGrid.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const w = rect.width || 1;
+
+    const totalTicks = LAST_STATE.meta.total_ticks;
+    const gridTick = getGridTick(LAST_STATE);
+
+    // 클릭 위치 → tick
+    let tick = Math.floor((x / w) * totalTicks);
+    tick = snapTick(tick, gridTick);
+    tick = Math.max(0, Math.min(tick, totalTicks));
+
+    // modifier에 따라 악기 결정
+    let drum = "kick";
+    if (e.shiftKey) drum = "snare";
+    else if (e.altKey) drum = "hihat";
+
+    await toggleDrumAtTick(tick, drum);
+  });
+}
+
+
 // Step 8 추가: 피치 설정 함수 프론트(UI): 선택된 블록이 멜로딕이면 pitch 입력창을 띄워서 바로 수정
 async function setPitchOnServer(eventId, pitch) {
   const id = await ensureProject();
@@ -778,6 +821,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   setActiveTrack("bass");  // ✅ 초기 강조
   wireKeyboardMove(); // ✅ 추가
   wireDrumStepToggle();    // ✅ 추가
+  wireKeyboardMove();     // 이미 있으면 유지
+  wireDrumGridClick();    // ✅ 추가
 });
 
 // /**

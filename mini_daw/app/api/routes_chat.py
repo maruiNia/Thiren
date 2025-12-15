@@ -19,6 +19,7 @@ from app.core.executor import PlanExecutor
 from app.core.refs import ExecContext
 from app.services.llm_service import DummyPlanner
 from app.services.context_store import get_ctx
+from app.services.llm_service import GemmaPlanner
 
 
 router = APIRouter(prefix="/api/projects", tags=["chat"])
@@ -46,12 +47,18 @@ def chat(project_id: str, req: ChatRequest):
 
     # Step6 프로젝트별 context 확보
     ctx = get_ctx(project_id)
+    print("UNDO STACK BEFORE:", len(ctx.history_events_stack))
 
-    planner = DummyPlanner()
-    plan = planner.make_plan(req.message)
+    # planner = DummyPlanner()
+    planner = GemmaPlanner(model_name="google/gemma-2-2b-it")
+    plan = planner.make_plan(req.message, state_hint={"bpm": state.meta.bpm, "bars": state.meta.bars})
 
     executor = PlanExecutor()
     messages = executor.execute(state, ctx, plan)
+    print("UNDO STACK AFTER :", len(ctx.history_events_stack))
+    print("[CHAT] message =", req.message)
+    print("[CHAT] plan.summary =", plan.summary)
+    print("[CHAT] actions =", [a.tool for a in plan.actions])
 
     # 저장
     state.save(path)

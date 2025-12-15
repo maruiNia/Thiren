@@ -433,38 +433,3 @@ def apply_drum_pattern(
     else:
         # 알 수 없는 패턴이면 아무것도 안 함
         return
-
-
-# def place_note(
-#     state: ProjectState,
-#     ctx: ExecContext,
-#     *,
-#     track_id: int,
-#     start: str | int,
-#     duration_tick: int = 4,
-#     sample_id: str = "bass_A1_001",
-#     pitch: str = "A1",
-#     velocity: float = 0.85,
-# ) -> str:
-#     """
-#     멜로딕 노트 이벤트 생성.
-#     """
-#     _push_undo_snapshot(state, ctx)
-
-#     start_tick = state.clamp_tick(state.parse_time(start))
-#     dur = max(1, duration_tick)
-
-#     eid = new_id("e")
-#     ev = Event(
-#         id=eid,
-#         track_id=track_id,
-#         start_tick=start_tick,
-#         duration_tick=dur,
-#         type="melodic",
-#         sample_id=sample_id,
-#         velocity=velocity,
-#         pitch=pitch,
-#     )
-#     state.events.append(ev)
-#     ctx.last_created_event_ids.append(eid)
-#     return eid

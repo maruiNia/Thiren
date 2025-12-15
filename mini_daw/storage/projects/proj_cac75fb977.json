@@ -1,0 +1,263 @@
+{
+  "id": "proj_cac75fb977",
+  "name": "My Project",
+  "meta": {
+    "time_signature": [
+      4,
+      4
+    ],
+    "bpm": 120,
+    "bars": 4,
+    "ticks_per_beat": 4,
+    "ticks_per_bar": 16,
+    "total_ticks": 64,
+    "swing": 0.0
+  },
+  "tracks": [
+    {
+      "id": 1,
+      "name": "Drums",
+      "type": "drum",
+      "volume": 0.75,
+      "pan": 0.0,
+      "mute": false,
+      "solo": false,
+      "sample_name": "Acoustic Kit 01",
+      "current_sample_id": "drum_kick_001"
+    },
+    {
+      "id": 2,
+      "name": "Bass",
+      "type": "melodic",
+      "volume": 0.8,
+      "pan": 0.0,
+      "mute": false,
+      "solo": false,
+      "sample_name": "bass_A1_5cf0213f12",
+      "current_sample_id": "bass_A1_5cf0213f12"
+    },
+    {
+      "id": 3,
+      "name": "Pad",
+      "type": "melodic",
+      "volume": 0.6,
+      "pan": 0.0,
+      "mute": false,
+      "solo": false,
+      "sample_name": "Warm Pad A",
+      "current_sample_id": "pad_A1_001"
+    },
+    {
+      "id": 4,
+      "name": "Lead",
+      "type": "melodic",
+      "volume": 0.7,
+      "pan": 0.0,
+      "mute": false,
+      "solo": false,
+      "sample_name": "Pluck Synth C",
+      "current_sample_id": "lead_A1_001"
+    }
+  ],
+  "events": [
+    {
+      "id": "e_b94b6094c1",
+      "track_id": 1,
+      "start_tick": 0,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_a669a9ca81",
+      "track_id": 1,
+      "start_tick": 4,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_9192888294",
+      "track_id": 1,
+      "start_tick": 8,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_f206218683",
+      "track_id": 1,
+      "start_tick": 12,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_651c38ea8d",
+      "track_id": 1,
+      "start_tick": 16,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_5ce60e6a3d",
+      "track_id": 1,
+      "start_tick": 20,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_921005a9f0",
+      "track_id": 1,
+      "start_tick": 24,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_50a1d3bf48",
+      "track_id": 1,
+      "start_tick": 28,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_c254d32798",
+      "track_id": 1,
+      "start_tick": 32,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_0a1745c647",
+      "track_id": 1,
+      "start_tick": 36,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_58b5f6e41d",
+      "track_id": 1,
+      "start_tick": 40,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_c265d904f4",
+      "track_id": 1,
+      "start_tick": 44,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_9ce1761fb4",
+      "track_id": 1,
+      "start_tick": 48,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_783397fdd3",
+      "track_id": 1,
+      "start_tick": 52,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_b9919fdd1c",
+      "track_id": 1,
+      "start_tick": 56,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_022986a5e9",
+      "track_id": 1,
+      "start_tick": 60,
+      "duration_tick": 1,
+      "type": "drum",
+      "sample_id": "drum_kick_001",
+      "velocity": 0.95,
+      "pitch": null
+    },
+    {
+      "id": "e_b97861ef11",
+      "track_id": 2,
+      "start_tick": 0,
+      "duration_tick": 4,
+      "type": "melodic",
+      "sample_id": "bass_A1_5cf0213f12",
+      "velocity": 0.85,
+      "pitch": "A1"
+    },
+    {
+      "id": "e_5266fcfc61",
+      "track_id": 2,
+      "start_tick": 2,
+      "duration_tick": 4,
+      "type": "melodic",
+      "sample_id": "bass_A1_5cf0213f12",
+      "velocity": 0.85,
+      "pitch": "A1"
+    },
+    {
+      "id": "e_2db52aa07c",
+      "track_id": 2,
+      "start_tick": 16,
+      "duration_tick": 4,
+      "type": "melodic",
+      "sample_id": "bass_A1_5cf0213f12",
+      "velocity": 0.85,
+      "pitch": "A1"
+    }
+  ],
+  "samples": {
+    "bass_A1_5cf0213f12": {
+      "kind": "melodic",
+      "instrument": "bass",
+      "base_pitch": "A1",
+      "prompt": "warm bass (stub)",
+      "path": "/files/samples/proj_cac75fb977/bass_A1_5cf0213f12.wav"
+    }
+  }
+}

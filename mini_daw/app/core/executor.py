@@ -18,6 +18,7 @@ from app.core.state import ProjectState
 from app.core.plan_schema import Plan, PlanAction
 from app.core.refs import ExecContext
 from app.core.tools import edit_tools
+from app.core.tools import drum_tools
 
 
 class PlanExecutor:
@@ -85,6 +86,14 @@ class PlanExecutor:
         if tool == "apply_drum_pattern":
             edit_tools.apply_drum_pattern(state, ctx, **args)
             return "applied drum pattern"
+        
+        if tool == "toggle_drum":
+            res = drum_tools.toggle_drum(state, ctx, **args)
+            return f"toggle drum: {res}"
+
+        if tool == "apply_pattern_four":
+            n = drum_tools.apply_pattern_four(state, ctx, **args)
+            return f"pattern four applied: {n} events"
 
 
 
