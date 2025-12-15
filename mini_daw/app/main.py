@@ -13,7 +13,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.api.routes_project import router as project_router
+
 from app.api.routes_chat import router as chat_router
+
+from app.api.routes_jobs import router as jobs_router
+from fastapi.staticfiles import StaticFiles
 
 
 app = FastAPI(title="Mini DAW (FastAPI)")
@@ -22,10 +26,14 @@ app = FastAPI(title="Mini DAW (FastAPI)")
 # 템플릿/정적 파일 연결
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/files", StaticFiles(directory="storage"), name="files")
 
 # API 라우터
 app.include_router(project_router)
+
 app.include_router(chat_router)
+
+app.include_router(jobs_router)
 
 
 @app.get("/", response_class=HTMLResponse)

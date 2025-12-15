@@ -115,6 +115,19 @@ async function sendChatCommand(text) {
   return data;
 }
 
+// job 폴링 유틸 추가
+async function pollJob(job_id, onUpdate, intervalMs = 250) {
+  while (true) {
+    const data = await api(`/api/jobs/${job_id}`, { method: "GET" });
+    onUpdate(data);
+
+    if (data.status === "done") return data;
+    if (data.status === "failed") throw new Error(data.error || "job failed");
+
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+}
+
 /** meta UI 표시(현재 index.html에서 meta-value들이 id가 없어서 최소만) */
 function renderMeta(state) {
   const projectNameEl = document.getElementById("projectName");
@@ -291,26 +304,113 @@ function wireUI() {
     }
   });
 
-  // (지금은 렌더/샘플 버튼은 Step4에서 job 붙일 예정)
+  // Render Preview Step4 에서 붙임
   const renderButton = document.getElementById("renderButton");
-  const mixdownButton = document.getElementById("mixdownButton");
-  const generateSampleButton = document.getElementById("generateSample");
-
   if (renderButton) {
-    renderButton.addEventListener("click", () => {
-      addChatMessage("Render Preview (Step4 예정)", false);
+    renderButton.addEventListener("click", async () => {
+      const id = await ensureProject();
+      addChatMessage("Render Preview", true);
+
+      const job = await api(`/api/projects/${id}/jobs/render_preview`, {
+        method: "POST",
+        body: JSON.stringify({ bar_start: 1, bars: 2, seconds: 2.0 }),
+      });
+
+      const done = await pollJob(job.job_id, (j) => {
+        showProgress(`${j.message} (${j.progress}%)`);
+        const bar = document.getElementById("progressBar");
+        if (bar) bar.style.width = `${j.progress}%`;
+      });
+
+      hideProgress();
+      addChatMessage(`Preview ready: ${done.result.wav_url}`, false);
+
+      // 오디오 플레이어에 반영(하단 audio 태그가 있으면 src 설정)
+      const audio = document.getElementById("audioPlayer");
+      if (audio && done.result && done.result.wav_url) {
+        audio.src = done.result.wav_url;
+        audio.load();
+      }
     });
   }
+
+  // Mixdown
+  const mixdownButton = document.getElementById("mixdownButton");
   if (mixdownButton) {
-    mixdownButton.addEventListener("click", () => {
-      addChatMessage("Mixdown (Step4 예정)", false);
+    mixdownButton.addEventListener("click", async () => {
+      const id = await ensureProject();
+      addChatMessage("Render Mixdown", true);
+
+      const job = await api(`/api/projects/${id}/jobs/render_mixdown`, {
+        method: "POST",
+        body: JSON.stringify({ bar_start: 1, bars: 4, seconds: 6.0 }),
+      });
+
+      const done = await pollJob(job.job_id, (j) => {
+        showProgress(`${j.message} (${j.progress}%)`);
+        const bar = document.getElementById("progressBar");
+        if (bar) bar.style.width = `${j.progress}%`;
+      });
+
+      hideProgress();
+      addChatMessage(`Mixdown ready: ${done.result.wav_url}`, false);
+
+      // 다운로드 버튼 동작(간단히 새 탭 오픈)
+      window.open(done.result.wav_url, "_blank");
     });
   }
+
+  // Generate Sample
+  const generateSampleButton = document.getElementById("generateSample");
   if (generateSampleButton) {
-    generateSampleButton.addEventListener("click", () => {
-      addChatMessage("Generate Sample (Step4 예정)", false);
+    generateSampleButton.addEventListener("click", async () => {
+      const id = await ensureProject();
+      addChatMessage("Generate Sample", true);
+
+      const job = await api(`/api/projects/${id}/jobs/generate_sample`, {
+        method: "POST",
+        body: JSON.stringify({
+          instrument: "bass",
+          base_pitch: "A1",
+          prompt: "warm bass (stub)",
+          seconds: 1.5
+        }),
+      });
+
+      const done = await pollJob(job.job_id, (j) => {
+        showProgress(`${j.message} (${j.progress}%)`);
+        const bar = document.getElementById("progressBar");
+        if (bar) bar.style.width = `${j.progress}%`;
+      });
+
+      hideProgress();
+      addChatMessage(`Sample generated: ${done.result.sample_id}`, false);
+
+      // 샘플 리스트 UI 반영은 Step5에서(지금은 reloadState로 충분)
+      await reloadState();
     });
   }
+
+  // // (지금은 렌더/샘플 버튼은 Step4에서 job 붙일 예정)
+  // const renderButton = document.getElementById("renderButton");
+  // const mixdownButton = document.getElementById("mixdownButton");
+  // const generateSampleButton = document.getElementById("generateSample");
+
+  // if (renderButton) {
+  //   renderButton.addEventListener("click", () => {
+  //     addChatMessage("Render Preview (Step4 예정)", false);
+  //   });
+  // }
+  // if (mixdownButton) {
+  //   mixdownButton.addEventListener("click", () => {
+  //     addChatMessage("Mixdown (Step4 예정)", false);
+  //   });
+  // }
+  // if (generateSampleButton) {
+  //   generateSampleButton.addEventListener("click", () => {
+  //     addChatMessage("Generate Sample (Step4 예정)", false);
+  //   });
+  // }
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
