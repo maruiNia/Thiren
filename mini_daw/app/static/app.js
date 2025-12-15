@@ -17,6 +17,8 @@ let LAST_STATE = null;
 // Step5 추가: 기본 선택 트랙
 let ACTIVE_TRACK_KEY = "bass"; // 기본 선택 트랙
 
+let SELECTED_EVENT_ID = null;
+
 
 // track name -> track_id
 const TRACK_ID = { drums: 1, bass: 2, pad: 3, lead: 4 };
@@ -117,6 +119,30 @@ function renderSamples(state) {
 
     ul.appendChild(li);
   }
+}
+
+// Step7에서는 “현재 선택된 grid”를 읽어서 스냅합니다.
+function getGridTick(state) {
+  // 기본값: 1 tick = 1/16
+  const total = state?.meta?.ticks_per_bar || 16;
+
+  // Grid 드롭다운(transport-select 중 첫 번째가 Grid라고 가정)
+  const selects = document.querySelectorAll(".transport-select");
+  if (!selects || selects.length === 0) return 1;
+
+  const gridSel = selects[0]; // Grid
+  const val = (gridSel.value || "1/16").trim(); // "1/4", "1/8", "1/16"
+
+  // 4/4 기준 ticks_per_bar=16이면:
+  // 1/4 = 4 ticks, 1/8 = 2 ticks, 1/16 = 1 tick
+  if (val === "1/4") return Math.max(1, Math.round(total / 4));   // 4
+  if (val === "1/8") return Math.max(1, Math.round(total / 8));   // 2
+  return 1;
+}
+
+function snapTick(tick, gridTick) {
+  if (!gridTick || gridTick <= 1) return tick;
+  return Math.round(tick / gridTick) * gridTick;
 }
 
 
@@ -288,6 +314,78 @@ async function selectEventOnServer(eventId) {
   });
 }
 
+//Step7 추가: 방향키 이동 핸들러 추가. 필요시 wirUI에 넣기
+async function setEventStartOnServer(eventId, startTick) {
+  const id = await ensureProject();
+  await api(`/api/projects/${id}/actions/set_start`, {
+    method: "POST",
+    body: JSON.stringify({ event_id: eventId, start_tick: startTick }),
+  });
+}
+
+// Step7 추가: 마우스로 드래그 이동. 필요시 runderTimeline에 반영
+function attachDrag(block, ev, state) {
+  let dragging = false;
+  let startX = 0;
+  let originalStart = 0;
+
+  const gridTick = getGridTick(state);
+  const totalTicks = state.meta.total_ticks;
+
+  const grid = block.parentElement; // track-grid
+  if (!grid) return;
+
+  block.addEventListener("mousedown", (e) => {
+    // 우클릭/중클릭 방지
+    if (e.button !== 0) return;
+
+    dragging = true;
+    startX = e.clientX;
+    originalStart = ev.start_tick;
+
+    SELECTED_EVENT_ID = ev.id; // 선택도 같이
+    e.preventDefault();
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!dragging) return;
+
+    const dx = e.clientX - startX;
+    const widthPx = grid.clientWidth || 1;
+
+    // px 이동량 → tick 이동량
+    const deltaTickFloat = (dx / widthPx) * totalTicks;
+    let next = originalStart + Math.round(deltaTickFloat);
+
+    next = snapTick(next, gridTick);
+    next = Math.max(0, Math.min(next, totalTicks));
+
+    // 화면에서만 미리 이동(서버 반영은 mouseup에서)
+    const leftPct = (next / totalTicks) * 100;
+    block.style.left = `${leftPct}%`;
+  });
+
+  window.addEventListener("mouseup", async () => {
+    if (!dragging) return;
+    dragging = false;
+
+    // 마우스 업 시 최종 위치를 계산해서 서버에 확정
+    // 현재 left%로부터 tick 복원
+    const left = parseFloat(block.style.left || "0");
+    let next = Math.round((left / 100) * totalTicks);
+    next = snapTick(next, gridTick);
+
+    try {
+      await setEventStartOnServer(ev.id, next);
+      await reloadState();
+    } catch (err) {
+      addChatMessage(`Drag apply failed: ${err.message}`, false);
+      await reloadState(); // 실패하면 서버 상태로 복구
+    }
+  });
+}
+//--------------------------------------------------------------
+
 /** 타임라인 렌더: state.events -> 각 track-grid에 event-block 생성 */
 function renderTimeline(state) {
   // 기존 event-block(샘플로 박혀 있던 것 포함) 전부 제거
@@ -328,6 +426,9 @@ function renderTimeline(state) {
       document.querySelectorAll(".event-block").forEach((b) => b.classList.remove("selected"));
       block.classList.add("selected");
 
+      // Step6 추가: 선택된 이벤트 ID 저장
+      SELECTED_EVENT_ID = ev.id;
+
       // ✅ 서버에 선택 저장
       try {
         await selectEventOnServer(ev.id);
@@ -337,6 +438,7 @@ function renderTimeline(state) {
       }
     });
 
+    attachDrag(block, ev, state);
     grid.appendChild(block);
   }
 }
@@ -361,6 +463,36 @@ async function patchTrack(trackKey, patch) {
   hideProgress();
   LAST_STATE = data.state;
   renderAll(LAST_STATE);
+}
+
+
+
+function wireKeyboardMove() {
+  window.addEventListener("keydown", async (e) => {
+    // 입력 중에는 방향키 이동 금지
+    const tag = (document.activeElement?.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea") return;
+
+    if (!LAST_STATE || !SELECTED_EVENT_ID) return;
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+
+    const ev = (LAST_STATE.events || []).find((x) => x.id === SELECTED_EVENT_ID);
+    if (!ev) return;
+
+    const gridTick = getGridTick(LAST_STATE);
+    const dir = (e.key === "ArrowLeft") ? -1 : 1;
+
+    // Shift 누르면 더 크게(4배) 이동
+    const step = gridTick * (e.shiftKey ? 4 : 1);
+
+    let next = ev.start_tick + dir * step;
+    next = snapTick(next, gridTick);
+    next = Math.max(0, Math.min(next, LAST_STATE.meta.total_ticks));
+
+    await setEventStartOnServer(ev.id, next);
+    await reloadState(); // 새 상태로 다시 렌더
+    e.preventDefault();
+  });
 }
 
 /** UI 이벤트 연결 */
@@ -543,6 +675,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   // Step5 추가: 
   wireTrackSelection();    // ✅ 추가
   setActiveTrack("bass");  // ✅ 초기 강조
+  wireKeyboardMove(); // ✅ 추가
 });
 
 // /**

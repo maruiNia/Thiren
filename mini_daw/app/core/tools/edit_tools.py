@@ -179,6 +179,27 @@ def delete_event(
     state.events = [e for e in state.events if e.id != target_id]
 
 
+def set_event_start(
+    state: ProjectState,
+    ctx: ExecContext,
+    *,
+    event_id: str,
+    start_tick: int,
+) -> None:
+    """
+    이벤트의 시작 tick을 직접 지정합니다(드래그/스냅용).
+
+    - undo 스냅샷 저장
+    - 프로젝트 범위로 clamp
+    """
+    _push_undo_snapshot(state, ctx)
+
+    ev = next((e for e in state.events if e.id == event_id), None)
+    if ev is None:
+        return
+
+    ev.start_tick = state.clamp_tick(int(start_tick))
+
 # def place_note(
 #     state: ProjectState,
 #     ctx: ExecContext,

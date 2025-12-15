@@ -30,3 +30,16 @@
   background: #EAF0FF;
   color: #1E5EFF;
 }
+
+.event-block {
+  cursor: grab;
+  user-select: none;
+}
+
+.event-block:active {
+  cursor: grabbing;
+}
+
+.event-block.selected {
+  outline: 2px solid #1E5EFF;
+}
