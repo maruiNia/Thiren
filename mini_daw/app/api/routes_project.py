@@ -42,6 +42,10 @@ class UpdateTrackRequest(BaseModel):
     mute: bool | None = None
     solo: bool | None = None
 
+    # ✅ Step5 추가: 트랙 기본 샘플 지정
+    sample_name: str | None = None
+    current_sample_id: str | None = None
+
 
 @router.post("")
 def create_project(req: CreateProjectRequest):
@@ -115,6 +119,11 @@ def update_track(project_id: str, track_id: int, req: UpdateTrackRequest):
         track.mute = req.mute
     if req.solo is not None:
         track.solo = req.solo
+    # ✅ Step5 추가: 트랙 기본 샘플 지정
+    if req.sample_name is not None:
+        track.sample_name = req.sample_name
+    if req.current_sample_id is not None:
+        track.current_sample_id = req.current_sample_id
 
     proj.save(path)
     return {"state": proj.to_dict()}

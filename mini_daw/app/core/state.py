@@ -186,6 +186,26 @@ class ProjectState:
         """JSON 파일에서 프로젝트 상태를 로드."""
         d = json.loads(path.read_text(encoding="utf-8"))
         return ProjectState.from_dict(d)
+    
+#Step5 : 선택된 샘플” 필드 추가
+@dataclass
+class Track:
+    """
+    트랙 정보.
+
+    - current_sample_id: 이 트랙에서 기본으로 사용할 샘플 id
+      (UI에서 샘플을 클릭하면 여기로 할당됨)
+    """
+    id: int
+    name: str
+    type: TrackType
+    volume: float = 0.8
+    pan: float = 0.0
+    mute: bool = False
+    solo: bool = False
+    sample_name: str = ""
+    current_sample_id: str = ""   # ✅ 추가
+
 
 
 def create_default_project(name: str, bpm: int, bars: int, ticks_per_beat: int) -> ProjectState:
@@ -195,11 +215,21 @@ def create_default_project(name: str, bpm: int, bars: int, ticks_per_beat: int) 
     pid = new_id("proj")
     meta = ProjectMeta(bpm=bpm, bars=bars, ticks_per_beat=ticks_per_beat)
 
+    # tracks = [
+    #     Track(id=1, name="Drums", type="drum", volume=0.75, pan=0.0, sample_name="Acoustic Kit 01"),
+    #     Track(id=2, name="Bass", type="melodic", volume=0.80, pan=0.0, sample_name="Sub Bass 808"),
+    #     Track(id=3, name="Pad", type="melodic", volume=0.60, pan=0.0, sample_name="Warm Pad A"),
+    #     Track(id=4, name="Lead", type="melodic", volume=0.70, pan=0.0, sample_name="Pluck Synth C"),
+    # ]
     tracks = [
-        Track(id=1, name="Drums", type="drum", volume=0.75, pan=0.0, sample_name="Acoustic Kit 01"),
-        Track(id=2, name="Bass", type="melodic", volume=0.80, pan=0.0, sample_name="Sub Bass 808"),
-        Track(id=3, name="Pad", type="melodic", volume=0.60, pan=0.0, sample_name="Warm Pad A"),
-        Track(id=4, name="Lead", type="melodic", volume=0.70, pan=0.0, sample_name="Pluck Synth C"),
+        Track(id=1, name="Drums", type="drum", volume=0.75, pan=0.0,
+            sample_name="Acoustic Kit 01", current_sample_id="drum_kick_001"),
+        Track(id=2, name="Bass", type="melodic", volume=0.80, pan=0.0,
+            sample_name="Sub Bass 808", current_sample_id="bass_A1_001"),
+        Track(id=3, name="Pad", type="melodic", volume=0.60, pan=0.0,
+            sample_name="Warm Pad A", current_sample_id="pad_A1_001"),
+        Track(id=4, name="Lead", type="melodic", volume=0.70, pan=0.0,
+            sample_name="Pluck Synth C", current_sample_id="lead_A1_001"),
     ]
 
     return ProjectState(id=pid, name=name, meta=meta, tracks=tracks)

@@ -76,7 +76,7 @@ def place_drum(
     ctx.last_created_event_ids.append(eid)
     return eid
 
-
+# Step5 place_note가 “트랙 기본 샘플”을 자동 사용
 def place_note(
     state: ProjectState,
     ctx: ExecContext,
@@ -84,17 +84,26 @@ def place_note(
     track_id: int,
     start: str | int,
     duration_tick: int = 4,
-    sample_id: str = "bass_A1_001",
+    sample_id: str | None = None,   # ✅ 변경
     pitch: str = "A1",
     velocity: float = 0.85,
 ) -> str:
     """
     멜로딕 노트 이벤트 생성.
+
+    sample_id가 None이면:
+    - 해당 트랙의 current_sample_id를 사용
+    - 그것도 비어 있으면 fallback으로 "bass_A1_001"
     """
     _push_undo_snapshot(state, ctx)
 
     start_tick = state.clamp_tick(state.parse_time(start))
     dur = max(1, duration_tick)
+
+    # ✅ 트랙의 기본 샘플 자동 선택
+    if sample_id is None:
+        tr = next((t for t in state.tracks if t.id == track_id), None)
+        sample_id = (tr.current_sample_id if tr and tr.current_sample_id else "bass_A1_001")
 
     eid = new_id("e")
     ev = Event(
@@ -110,6 +119,40 @@ def place_note(
     state.events.append(ev)
     ctx.last_created_event_ids.append(eid)
     return eid
+
+# def place_note(
+#     state: ProjectState,
+#     ctx: ExecContext,
+#     *,
+#     track_id: int,
+#     start: str | int,
+#     duration_tick: int = 4,
+#     sample_id: str = "bass_A1_001",
+#     pitch: str = "A1",
+#     velocity: float = 0.85,
+# ) -> str:
+#     """
+#     멜로딕 노트 이벤트 생성.
+#     """
+#     _push_undo_snapshot(state, ctx)
+
+#     start_tick = state.clamp_tick(state.parse_time(start))
+#     dur = max(1, duration_tick)
+
+#     eid = new_id("e")
+#     ev = Event(
+#         id=eid,
+#         track_id=track_id,
+#         start_tick=start_tick,
+#         duration_tick=dur,
+#         type="melodic",
+#         sample_id=sample_id,
+#         velocity=velocity,
+#         pitch=pitch,
+#     )
+#     state.events.append(ev)
+#     ctx.last_created_event_ids.append(eid)
+#     return eid
 
 
 def move_event(

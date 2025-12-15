@@ -14,6 +14,10 @@
 let PROJECT_ID = null;
 let LAST_STATE = null;
 
+// Step5 추가: 기본 선택 트랙
+let ACTIVE_TRACK_KEY = "bass"; // 기본 선택 트랙
+
+
 // track name -> track_id
 const TRACK_ID = { drums: 1, bass: 2, pad: 3, lead: 4 };
 // track_id -> data-track attribute
@@ -30,6 +34,107 @@ async function api(path, options = {}) {
   }
   return res.json();
 }
+
+// Step5 추가: 트랙 선택 UI 강조
+function setActiveTrack(trackKey) {
+  ACTIVE_TRACK_KEY = trackKey;
+
+  document.querySelectorAll(".track-item").forEach((el) => {
+    el.classList.toggle("active-track", el.dataset.track === trackKey);
+  });
+
+  addChatMessage(`Active track: ${trackKey}`, false);
+}
+
+// Step5 추가: 리스트 렌더 함수 추가
+function renderSamples(state) {
+  const ul = document.getElementById("samplesList");
+  if (!ul) return;
+
+  ul.innerHTML = "";
+
+  const keys = Object.keys(state.samples || {});
+  if (keys.length === 0) {
+    const li = document.createElement("li");
+    li.className = "sample-item";
+    li.textContent = "No samples yet. Click 'Generate Sample'.";
+    ul.appendChild(li);
+    return;
+  }
+
+  for (const sid of keys) {
+    const s = state.samples[sid];
+
+    const li = document.createElement("li");
+    li.className = "sample-item";
+
+    const title = document.createElement("div");
+    title.className = "sample-name";
+    title.textContent = `${sid}`;
+
+    const meta = document.createElement("div");
+    meta.className = "sample-meta";
+    meta.textContent = `${s.instrument || ""} / ${s.base_pitch || ""}`;
+
+    const btn = document.createElement("button");
+    btn.className = "sample-use-btn";
+    btn.textContent = "Use";
+    btn.addEventListener("click", async () => {
+      // ✅ 현재 활성 트랙에 샘플 할당
+      const trackId = TRACK_ID[ACTIVE_TRACK_KEY];
+      addChatMessage(`Assign sample ${sid} -> ${ACTIVE_TRACK_KEY}`, true);
+
+      const id = await ensureProject();
+      await api(`/api/projects/${id}/tracks/${trackId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          current_sample_id: sid,
+          sample_name: sid
+        }),
+      });
+
+      // 새 state 반영
+      await reloadState();
+    });
+
+    // 샘플 미리듣기(무음일 수도 있지만 흐름 확인용)
+    const play = document.createElement("button");
+    play.className = "sample-play-btn";
+    play.textContent = "Play";
+    play.addEventListener("click", () => {
+      const audio = document.getElementById("audioPlayer");
+      if (audio && s.path) {
+        audio.src = s.path;
+        audio.load();
+        audio.play().catch(() => {});
+      }
+    });
+
+    li.appendChild(title);
+    li.appendChild(meta);
+    li.appendChild(play);
+    li.appendChild(btn);
+
+    ul.appendChild(li);
+  }
+}
+
+
+function wireTrackSelection() {
+  const items = document.querySelectorAll(".track-item");
+  console.log("track-item count:", items.length); // ✅ 디버깅용
+
+  items.forEach((item) => {
+    item.addEventListener("click", (e) => {
+      const tag = (e.target.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "button") return;
+
+      const key = item.dataset.track;
+      if (key) setActiveTrack(key);
+    });
+  });
+}
+// -------------------------------------------------------------
 
 /** 채팅 메시지 UI 출력 */
 function addChatMessage(text, isUser) {
@@ -224,6 +329,7 @@ function renderAll(state) {
   renderMeta(state);
   renderTrackControls(state);
   renderTimeline(state);
+  renderSamples(state);     // Step5 ✅ 추가
 }
 
 /** 서버에 트랙 PATCH */
@@ -411,11 +517,15 @@ function wireUI() {
   //     addChatMessage("Generate Sample (Step4 예정)", false);
   //   });
   // }
+  
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
   await ensureProject();
   wireUI();
+  // Step5 추가: 
+  wireTrackSelection();    // ✅ 추가
+  setActiveTrack("bass");  // ✅ 초기 강조
 });
 
 // /**

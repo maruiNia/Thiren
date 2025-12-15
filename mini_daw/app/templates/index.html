@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mini DAW Dashboard</title>
+  <link rel="stylesheet" href="/static/app.css"> <!-- Step 5 Custom styles -->
   <script src="/_sdk/element_sdk.js"></script>
   <style>
     body {
@@ -900,14 +901,18 @@
      <div class="section-title">
       Tracks
      </div>
+
      <div class="track-card">
-      <div class="track-card-header">
-       <div class="track-name">
-        Drums
-       </div>
-       <div class="track-buttons"><button class="track-toggle" id="drumsMute">M</button> <button class="track-toggle" id="drumsSolo">S</button>
-       </div>
+      <div class="track-card track-item" data-track="drums">
+        <div class="track-card-header">
+          <div class="track-name">Drums</div>
+          <div class="track-buttons">
+            <button class="track-toggle" id="drumsMute">M</button> 
+            <button class="track-toggle" id="drumsSolo">S</button>
+          </div>
+        </div>
       </div>
+
       <div class="track-control">
        <div class="control-label"><span>Volume</span> <span id="drumsVolValue">75</span>
        </div><input type="range" class="control-slider" id="drumsVol" min="0" max="100" value="75">
@@ -921,13 +926,16 @@
       </div>
      </div>
      <div class="track-card">
-      <div class="track-card-header">
-       <div class="track-name">
-        Bass
-       </div>
-       <div class="track-buttons"><button class="track-toggle" id="bassMute">M</button> <button class="track-toggle" id="bassSolo">S</button>
-       </div>
+      <div class="track-card track-item" data-track="bass">
+        <div class="track-card-header">
+          <div class="track-name">Bass</div>
+          <div class="track-buttons">
+            <button class="track-toggle" id="bassMute">M</button> 
+            <button class="track-toggle" id="bassSolo">S</button>
+          </div>
+        </div>
       </div>
+
       <div class="track-control">
        <div class="control-label"><span>Volume</span> <span id="bassVolValue">80</span>
        </div><input type="range" class="control-slider" id="bassVol" min="0" max="100" value="80">
@@ -940,14 +948,18 @@
        Sample: Sub Bass 808
       </div>
      </div>
+
      <div class="track-card">
-      <div class="track-card-header">
-       <div class="track-name">
-        Pad
-       </div>
-       <div class="track-buttons"><button class="track-toggle" id="padMute">M</button> <button class="track-toggle" id="padSolo">S</button>
-       </div>
+      <div class="track-card track-item" data-track="pad">
+        <div class="track-card-header">
+          <div class="track-name">Pad</div>
+          <div class="track-buttons">
+            <button class="track-toggle" id="padMute">M</button> 
+            <button class="track-toggle" id="padSolo">S</button>
+          </div>
+        </div>
       </div>
+
       <div class="track-control">
        <div class="control-label"><span>Volume</span> <span id="padVolValue">60</span>
        </div><input type="range" class="control-slider" id="padVol" min="0" max="100" value="60">
@@ -961,13 +973,16 @@
       </div>
      </div>
      <div class="track-card">
-      <div class="track-card-header">
-       <div class="track-name">
-        Lead
-       </div>
-       <div class="track-buttons"><button class="track-toggle" id="leadMute">M</button> <button class="track-toggle" id="leadSolo">S</button>
-       </div>
+      <div class="track-card track-item" data-track="lead">
+        <div class="track-card-header">
+          <div class="track-name">Lead</div>
+          <div class="track-buttons">
+            <button class="track-toggle" id="leadMute">M</button> 
+            <button class="track-toggle" id="leadSolo">S</button>
+          </div>
+        </div>
       </div>
+
       <div class="track-control">
        <div class="control-label"><span>Volume</span> <span id="leadVolValue">70</span>
        </div><input type="range" class="control-slider" id="leadVol" min="0" max="100" value="70">
@@ -985,16 +1000,8 @@
      <div class="section-title">
       Samples
      </div>
-     <div class="sample-list">
-      <div class="sample-item"><span>Acoustic Kit 01</span> <span>🥁</span>
-      </div>
-      <div class="sample-item"><span>Sub Bass 808</span> <span>🎵</span>
-      </div>
-      <div class="sample-item"><span>Warm Pad A</span> <span>〜</span>
-      </div>
-      <div class="sample-item"><span>Pluck Synth C</span> <span>♬</span>
-      </div>
-     </div><button class="button button-primary" id="generateSample" style="width: 100%"> Generate Sample </button>
+     <ul class="sample-list" id="samplesList"></ul>
+     <button class="button button-primary" id="generateSample" style="width: 100%"> Generate Sample </button>
     </div>
     <div class="panel-section">
      <div class="section-title">
@@ -1091,13 +1098,13 @@
           addMessage('Command received! Processing your request...', false);
         }, 500);
       }
-    }); */
+    }); 
 
     chatInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         sendButton.click();
       }
-    });
+    }); */
 
     // Transport controls
     const playButton = document.getElementById('playButton');

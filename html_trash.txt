@@ -1,0 +1,11 @@
+1003
+/* <div class="sample-list">
+      <div class="sample-item"><span>Acoustic Kit 01</span> <span>🥁</span>
+      </div>
+      <div class="sample-item"><span>Sub Bass 808</span> <span>🎵</span>
+      </div>
+      <div class="sample-item"><span>Warm Pad A</span> <span>〜</span>
+      </div>
+      <div class="sample-item"><span>Pluck Synth C</span> <span>♬</span>
+      </div>
+     </div> */
