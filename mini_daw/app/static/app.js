@@ -115,25 +115,74 @@ function wireTrackControls() {
   });
 }
 
+// Step 2: 채팅 전송 함수
+async function sendChat(text) {
+  const id = await ensureProject();
+
+  const data = await api(`/api/projects/${id}/chat`, {
+    method: "POST",
+    body: JSON.stringify({ message: text }),
+  });
+
+  // 서버 메시지(실행 로그)
+  if (data.messages && data.messages.length) {
+    data.messages.forEach((m) => showToastChat(m, false));
+  } else {
+    showToastChat("No actions executed.", false);
+  }
+
+  return data;
+}
+
 function wireChatSend() {
   const chatInput = document.getElementById("chatInput");
   const sendButton = document.getElementById("sendButton");
+  const undoButton = document.getElementById("undoButton");
 
-  if (!chatInput || !sendButton) return;
+  if (sendButton) {
+    sendButton.addEventListener("click", async () => {
+      const text = chatInput.value.trim();
+      if (!text) return;
 
-  sendButton.addEventListener("click", async () => {
-    const text = chatInput.value.trim();
-    if (!text) return;
+      await ensureProject();
+      showToastChat(text, true);
 
-    await ensureProject();
-    showToastChat(text, true);
+      await sendChat(text);
 
-    // Step1: 아직 /chat은 없음 → 다음 단계에서 붙일 예정
-    showToastChat("Step1: chat endpoint not wired yet. Next step will execute plans.", false);
+      chatInput.value = "";
+    });
+  }
 
-    chatInput.value = "";
-  });
+  if (undoButton) {
+    undoButton.addEventListener("click", async () => {
+      await ensureProject();
+      showToastChat("undo", true);
+      await sendChat("undo");
+    });
+  }
 }
+
+
+// Step1에서는 채팅 기능은 아직 구현하지 않음
+// function wireChatSend() {
+//   const chatInput = document.getElementById("chatInput");
+//   const sendButton = document.getElementById("sendButton");
+
+//   if (!chatInput || !sendButton) return;
+
+//   sendButton.addEventListener("click", async () => {
+//     const text = chatInput.value.trim();
+//     if (!text) return;
+
+//     await ensureProject();
+//     showToastChat(text, true);
+
+//     // Step1: 아직 /chat은 없음 → 다음 단계에서 붙일 예정
+//     showToastChat("Step1: chat endpoint not wired yet. Next step will execute plans.", false);
+
+//     chatInput.value = "";
+//   });
+// }
 
 window.addEventListener("DOMContentLoaded", async () => {
   await ensureProject();
