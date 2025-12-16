@@ -152,21 +152,26 @@ function renderSamples(state) {
     });
 
     // 샘플 미리듣기(무음일 수도 있지만 흐름 확인용)
-    const play = document.createElement("button");
-    play.className = "sample-play-btn";
-    play.textContent = "Play";
-    play.addEventListener("click", () => {
-      const audio = document.getElementById("audioPlayer");
-      if (audio && s.path) {
-        audio.src = s.path;
-        audio.load();
-        audio.play().catch(() => {});
-      }
+    const playBtn = document.createElement("button");
+    playBtn.className = "sample-play-btn";
+    playBtn.textContent = "Play";
+
+    playBtn.addEventListener("click", (e) => {
+      e.stopPropagation(); // Use 버튼/선택 이벤트 방지
+
+      const audio = document.getElementById("samplePlayer"); // ✅ 여기!
+      if (!audio || !s.path) return;
+
+      audio.pause();
+      audio.currentTime = 0;
+      audio.src = s.path;
+      audio.load();
+      audio.play().catch(() => {});
     });
 
     li.appendChild(title);
     li.appendChild(meta);
-    li.appendChild(play);
+    li.appendChild(playBtn); // ✅ 여기
     li.appendChild(btn);
 
     ul.appendChild(li);
@@ -594,6 +599,26 @@ function renderAll(state) {
   renderTimeline(state);
   renderSamples(state);     // Step5 ✅ 추가
 }
+
+function playSample(samplePath) {
+  const audio = document.getElementById("samplePlayer");
+  if (!audio) {
+    console.warn("samplePlayer not found");
+    return;
+  }
+
+  // 같은 파일 연속 클릭해도 다시 재생되게
+  audio.pause();
+  audio.currentTime = 0;
+
+  audio.src = samplePath;
+  audio.load();
+
+  audio.play().catch((err) => {
+    console.error("Audio play failed:", err);
+  });
+}
+
 
 /** 서버에 트랙 PATCH */
 async function patchTrack(trackKey, patch) {

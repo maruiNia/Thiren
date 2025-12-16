@@ -21,6 +21,9 @@ from app.core.state import ProjectState, new_id
 from app.services.job_queue import JOBS
 from app.core.audio.render_stub import write_silence_wav
 
+from app.core.audio.mixer import render_mix_to_wav, RenderRegion
+
+
 
 router = APIRouter(tags=["jobs"])
 
@@ -75,47 +78,36 @@ def get_job(job_id: str):
         "error": job.error,
     }
 
-
 @router.post("/api/projects/{project_id}/jobs/render_preview", response_model=JobResponse)
 def create_render_preview(project_id: str, req: RenderRequest):
-    """
-    프리뷰 렌더 job 생성.
-
-    Step4에서는 무음 wav를 생성합니다.
-    """
     path = project_path(project_id)
     if not path.exists():
         raise HTTPException(status_code=404, detail="Project not found")
 
-    # 작업 함수(백그라운드)
     def _task(job_id: str) -> dict:
         JOBS.update(job_id, progress=5, message="loading project")
         state = ProjectState.load(path)
 
-        # 진행률 시뮬레이션
-        JOBS.update(job_id, progress=25, message="rendering preview (stub)")
-        time.sleep(0.3)
-
+        JOBS.update(job_id, progress=35, message="mixing preview")
         out = render_path(project_id, "preview")
-        # 길이는 req.seconds (UI 검증용)
-        write_silence_wav(out, seconds=req.seconds)
-        JOBS.update(job_id, progress=80, message="writing wav")
-        time.sleep(0.2)
 
-        # 결과는 프론트에서 접근 가능한 URL로 반환
-        return {"wav_url": f"/files/renders/{project_id}/preview.wav", "meta": state.meta.__dict__}
+        render_mix_to_wav(
+            state,
+            out_wav=out,
+            storage_dir=CONFIG.storage_dir,
+            preset_dir=getattr(CONFIG, "preset_samples_dir", None),
+            region=RenderRegion(bar_start=req.bar_start, bars=req.bars),
+            sr=44100,
+        )
+
+        JOBS.update(job_id, progress=95, message="done")
+        return {"wav_url": f"/files/renders/{project_id}/preview.wav"}
 
     job_id = JOBS.create("render_preview", _task)
     return JobResponse(job_id=job_id)
 
-
 @router.post("/api/projects/{project_id}/jobs/render_mixdown", response_model=JobResponse)
 def create_render_mixdown(project_id: str, req: RenderRequest):
-    """
-    믹스다운 렌더 job 생성.
-
-    Step4에서는 무음 wav를 생성합니다.
-    """
     path = project_path(project_id)
     if not path.exists():
         raise HTTPException(status_code=404, detail="Project not found")
@@ -124,15 +116,21 @@ def create_render_mixdown(project_id: str, req: RenderRequest):
         JOBS.update(job_id, progress=5, message="loading project")
         state = ProjectState.load(path)
 
-        JOBS.update(job_id, progress=30, message="mixdown rendering (stub)")
-        time.sleep(0.5)
-
+        JOBS.update(job_id, progress=40, message="mixing mixdown")
         out = render_path(project_id, "mixdown")
-        write_silence_wav(out, seconds=max(req.seconds, 4.0))  # 믹스다운은 좀 길게
-        JOBS.update(job_id, progress=85, message="finalizing")
-        time.sleep(0.2)
 
-        return {"wav_url": f"/files/renders/{project_id}/mixdown.wav", "meta": state.meta.__dict__}
+        # 믹스다운은 전체 렌더 (region=None)
+        render_mix_to_wav(
+            state,
+            out_wav=out,
+            storage_dir=CONFIG.storage_dir,
+            preset_dir=getattr(CONFIG, "preset_samples_dir", None),
+            region=None,
+            sr=44100,
+        )
+
+        JOBS.update(job_id, progress=95, message="done")
+        return {"wav_url": f"/files/renders/{project_id}/mixdown.wav"}
 
     job_id = JOBS.create("render_mixdown", _task)
     return JobResponse(job_id=job_id)
@@ -248,4 +246,64 @@ def create_generate_sample(project_id: str, req: GenerateSampleRequest):
 #         return {"sample_id": sid, "wav_url": state.samples[sid]["path"]}
 
 #     job_id = JOBS.create("generate_sample", _task)
+#     return JobResponse(job_id=job_id)
+
+# @router.post("/api/projects/{project_id}/jobs/render_preview", response_model=JobResponse)
+# def create_render_preview(project_id: str, req: RenderRequest):
+#     """
+#     프리뷰 렌더 job 생성.
+
+#     Step4에서는 무음 wav를 생성합니다.
+#     """
+#     path = project_path(project_id)
+#     if not path.exists():
+#         raise HTTPException(status_code=404, detail="Project not found")
+
+#     # 작업 함수(백그라운드)
+#     def _task(job_id: str) -> dict:
+#         JOBS.update(job_id, progress=5, message="loading project")
+#         state = ProjectState.load(path)
+
+#         # 진행률 시뮬레이션
+#         JOBS.update(job_id, progress=25, message="rendering preview (stub)")
+#         time.sleep(0.3)
+
+#         out = render_path(project_id, "preview")
+#         # 길이는 req.seconds (UI 검증용)
+#         write_silence_wav(out, seconds=req.seconds)
+#         JOBS.update(job_id, progress=80, message="writing wav")
+#         time.sleep(0.2)
+
+#         # 결과는 프론트에서 접근 가능한 URL로 반환
+#         return {"wav_url": f"/files/renders/{project_id}/preview.wav", "meta": state.meta.__dict__}
+
+#     job_id = JOBS.create("render_preview", _task)
+#     return JobResponse(job_id=job_id)
+
+# @router.post("/api/projects/{project_id}/jobs/render_mixdown", response_model=JobResponse)
+# def create_render_mixdown(project_id: str, req: RenderRequest):
+#     """
+#     믹스다운 렌더 job 생성.
+
+#     Step4에서는 무음 wav를 생성합니다.
+#     """
+#     path = project_path(project_id)
+#     if not path.exists():
+#         raise HTTPException(status_code=404, detail="Project not found")
+
+#     def _task(job_id: str) -> dict:
+#         JOBS.update(job_id, progress=5, message="loading project")
+#         state = ProjectState.load(path)
+
+#         JOBS.update(job_id, progress=30, message="mixdown rendering (stub)")
+#         time.sleep(0.5)
+
+#         out = render_path(project_id, "mixdown")
+#         write_silence_wav(out, seconds=max(req.seconds, 4.0))  # 믹스다운은 좀 길게
+#         JOBS.update(job_id, progress=85, message="finalizing")
+#         time.sleep(0.2)
+
+#         return {"wav_url": f"/files/renders/{project_id}/mixdown.wav", "meta": state.meta.__dict__}
+
+#     job_id = JOBS.create("render_mixdown", _task)
 #     return JobResponse(job_id=job_id)
